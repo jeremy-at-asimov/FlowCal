@@ -1621,7 +1621,7 @@ class FCSData(np.ndarray):
         num_channels = int(fcs_file.text['$PAR'])
 
         # Channel names: Stored in the keyword parameter $PnN for channel n.
-        channels = [fcs_file.text.get('$P{}N'.format(i))
+        channels = [fcs_file.text.get('$P{}S'.format(i))
                     for i in range(1, num_channels + 1)]
         channels = tuple(channels)
 
