@@ -314,3 +314,31 @@ def rcv(data, channels=None):
     # Calculate and return statistic
     q75, q25 = np.percentile(data_stats, [75 ,25], axis=0)
     return (q75 - q25)/np.median(data_stats, axis=0)
+
+def events(data, channels=None):
+    """
+    Calculate the number of events in an FCSData object.
+
+    Parameters
+    ----------
+    data : FCSData or numpy array
+        NxD flow cytometry data where N is the number of events and D is
+        the number of parameters (aka channels).
+    channels : int or str or list of int or list of str, optional
+        Channels on which to calculate the statistic. If None, use all
+        channels.
+
+    Returns
+    -------
+    float
+        The number of events in the specified channels of `data`.
+
+    """
+    # Slice data to take statistics from
+    if channels is None:
+        data_stats = data
+    else:
+        data_stats = data[:, channels]
+
+    # Calculate and return statistic
+    return data.shape[0]
