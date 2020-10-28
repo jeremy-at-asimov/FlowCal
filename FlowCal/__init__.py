@@ -15,3 +15,4 @@ from . import transform
 from . import mef
 from . import plot
 from . import stats
+from . import bin

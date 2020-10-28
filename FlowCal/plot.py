@@ -1957,3 +1957,254 @@ def scatter3d_and_projections(data_list,
         plt.tight_layout()
         plt.savefig(savefig, dpi=savefig_dpi)
         plt.close()
+
+
+def line2d(df,
+           sample_names='',
+           xaxis='',
+           yaxis='',
+           xscale='logicle',
+           yscale='logicle',
+           xlabel=None,
+           ylabel=None,
+           xlim=None,
+           ylim=None,
+           title=None,
+           color=None,
+           savefig=None,
+           **kwargs):
+    """
+    Plot 2D line plot from a pandas dataframe.
+    Added by Jeremy Gam, jeremy@asimov.io
+
+    Parameters
+    ----------
+    df : pandas dataframe
+        Binnedlow cytometry data to plot.
+    sample_names : list of str
+        Sample names to plot.
+    xaxis : str
+        Name of statistic and channel to plot on x axis (e.g.
+        'median_PB450-A').
+    yaxis : str
+        Name of statistic and channel to plot on y axis (e.g.
+        'median_APC-A').
+    xlim : tuple, optional
+        Limits for the x axis.
+    ylim : tuple, optional
+        Limits for the y axis.
+    savefig : str, optional
+        The name of the file to save the figure to. If None, do not save.
+
+    Other parameters
+    ----------------
+    xscale : str, optional
+        Scale of the x axis, either ``linear``, ``log``, or ``logicle``.
+    yscale : str, optional
+        Scale of the y axis, either ``linear``, ``log``, or ``logicle``.
+    xlabel : str, optional
+        Label to use on the x axis. If None, attempts to extract channel
+        name from last data object.
+    ylabel : str, optional
+        Label to use on the y axis. If None, attempts to extract channel
+        name from last data object.
+    title : str, optional
+        Plot title.
+    color : matplotlib color or list of matplotlib colors, optional
+        Color for the scatter plot. It can be a list with the same length
+        as `data_list`. If `color` is not specified, elements from
+        `data_list` are plotted with colors taken from the module-level
+        variable `cmap_default`.
+    kwargs : dict, optional
+        Additional parameters passed directly to matploblib's ``scatter``.
+
+    Notes
+    -----
+    `scatter2d` calls matplotlib's ``scatter`` function for each object in
+    data_list. Additional keyword arguments provided to `scatter2d` are
+    passed directly to ``plt.scatter``.
+
+    """
+    # Check appropriate inputs
+    if not xaxis:
+        raise ValueError('need string for x axis statistic + channel')
+    if not yaxis:
+        raise ValueError('need string for y axis statistic + channel')
+    if not sample_names:
+        raise ValueError('need list of strings for sample names')
+
+    # Default colors
+    # if color is None:
+    #    color = [plt.cm.tab10(i) for i,name in enumerate(sample_names)]
+
+    # Convert color to list, if necessary
+    if not isinstance(color, list):
+        color = [color] * len(sample_names)
+
+    # Iterate through sample names. Plot and combine data for use in logicle
+    combined_data = np.zeros((1, 2))
+    for i, sample_name in enumerate(sample_names):
+        xcolumn = sample_name + '_' + xaxis
+        ycolumn = sample_name + '_' + yaxis
+        xdata = df[xcolumn].values
+        ydata = df[ycolumn].values
+
+        plt.plot(xdata,
+                 ydata,
+                 # s=5,
+                 alpha=1,
+                 color=color[i])
+
+        temp_data = np.column_stack((xdata, ydata))
+        combined_data = np.append(combined_data, temp_data, axis=0)
+
+    combined_data = combined_data[~np.isnan(combined_data)]
+
+    # Set labels if specified, else try to extract channel names
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    else:
+        plt.xlabel(xaxis)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    else:
+        plt.ylabel(yaxis)
+
+    # Set scale of axes
+    if xscale == 'logicle':
+        plt.gca().set_xscale(xscale, data=combined_data, channel=0)
+    else:
+        plt.gca().set_xscale(xscale)
+    if yscale == 'logicle':
+        plt.gca().set_yscale(yscale, data=combined_data, channel=1)
+    else:
+        plt.gca().set_yscale(yscale)
+
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+
+    # Title
+    if title is not None:
+        plt.title(title)
+
+    # Save if necessary
+    if savefig is not None:
+        plt.tight_layout()
+        plt.savefig(savefig, dpi=savefig_dpi)
+        plt.close()
+
+
+def density_and_contour(data,
+                     gate_contour=None,
+                     channels=None,
+                     density_params={},
+                     figsize=None,
+                     savefig=None):
+    """
+    Make a combined density/histogram plot of a FCSData object.
+
+    This function calls `hist1d` and `density2d` to plot a density diagram
+    and a number of histograms in different subplots of the same plot using
+    one single function call. Setting `density_channels` to None will not
+    produce a density diagram, and setting `hist_channels` to None will not
+    produce any histograms. Setting both to None will raise an error.
+    Additional parameters can be provided to `density2d` and `hist1d` by
+    using `density_params` and `hist_params`.
+
+    If `gated_data` is provided, this function will plot the histograms
+    corresponding to `gated_data` on top of `data`'s histograms, with some
+    transparency on `data`. In addition, a legend will be added with the
+    labels 'Ungated' and 'Gated'. If `gate_contour` is provided and it
+    contains a valid list of 2D curves, these will be plotted on top of the
+    density plot.
+
+    Parameters
+    ----------
+    data : FCSData object
+        Flow cytometry data object to plot.
+    gate_contour : list, optional
+        List of Nx2 curves, representing a gate contour to be plotted in
+        the density diagram.
+    channels : list
+        Two channels to use for the density plot.
+    density_params : dict, optional
+        Parameters to pass to `density2d`.
+    savefig : str, optional
+        The name of the file to save the figure to. If None, do not save.
+
+    Other parameters
+    ----------------
+    figsize : tuple, optional
+        Figure size. If None, calculate a default based on the number of
+        subplots.
+
+    Raises
+    ------
+    ValueError
+        If both `channels` is None.
+
+    """
+    # Check channels
+    if channels is None:
+        raise ValueError("density_channels cannot be None")
+
+    #plot_density = not (density_channels is None)
+    #n_plots = plot_density + len(hist_channels)
+
+    # Calculate plot size if necessary
+    if figsize is None:
+        figsize = (6, 4) # width,height
+
+    # Create plot
+    plt.figure(figsize=figsize)
+
+    # Density plot
+    #if plot_density:
+    #plt.subplot(n_plots, 1, 1)
+    # Plot density diagram
+    density2d(data, channels=channels, **density_params)
+    # Plot gate contour
+    if gate_contour is not None:
+        for g in gate_contour:
+            plt.plot(g[:, 0], g[:, 1], color='k', linewidth=1.25)
+    # Add title
+    if 'title' not in density_params:
+        #if gated_data is not None:
+        #    ret = gated_data.shape[0] * 100. / data.shape[0]
+        #    title = "{} ({:.1f}% retained)".format(str(data), ret)
+        #else:
+        title = str(data)
+        plt.title(title)
+
+    '''
+    # Colors
+    n_colors = n_plots - 1
+    colors = [cmap_default(i) for i in np.linspace(0, 1, n_colors)]
+    # Histogram
+    for i, hist_channel in enumerate(hist_channels):
+        # Define subplot
+        plt.subplot(n_plots, 1, plot_density + i + 1)
+        # Default colors
+        hist_params_i = hist_params[i].copy()
+        if 'facecolor' not in hist_params_i:
+            hist_params_i['facecolor'] = colors[i]
+        # Plots
+        if gated_data is not None:
+            hist1d(data,
+                   channel=hist_channel,
+                   alpha=0.5,
+                   **hist_params_i)
+            hist1d(gated_data,
+                   channel=hist_channel,
+                   alpha=1.0,
+                   **hist_params_i)
+            plt.legend(['Ungated', 'Gated'], loc='best', fontsize='medium')
+        else:
+            hist1d(data, channel=hist_channel, **hist_params_i)
+    '''
+
+    # Save if necessary
+    if savefig is not None:
+        plt.tight_layout()
+        plt.savefig(savefig, dpi=savefig_dpi)
+        plt.close()
