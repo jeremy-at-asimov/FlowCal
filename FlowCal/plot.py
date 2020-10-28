@@ -1064,7 +1064,7 @@ def hist1d(data_list,
 def density2d(data, 
               channels=[0,1],
               bins=1024,
-              mode='mesh',
+              mode='scatter',
               normed=False,
               smooth=True,
               sigma=10.0,
@@ -2098,7 +2098,7 @@ def density_and_contour(data,
                      gate_contour=None,
                      channels=None,
                      density_params={},
-                     figsize=None,
+                     figsize=(6, 4),
                      savefig=None):
     """
     Make a combined density/histogram plot of a FCSData object.
@@ -2148,19 +2148,9 @@ def density_and_contour(data,
     if channels is None:
         raise ValueError("density_channels cannot be None")
 
-    #plot_density = not (density_channels is None)
-    #n_plots = plot_density + len(hist_channels)
-
-    # Calculate plot size if necessary
-    if figsize is None:
-        figsize = (6, 4) # width,height
-
     # Create plot
     plt.figure(figsize=figsize)
 
-    # Density plot
-    #if plot_density:
-    #plt.subplot(n_plots, 1, 1)
     # Plot density diagram
     density2d(data, channels=channels, **density_params)
     # Plot gate contour
@@ -2169,39 +2159,8 @@ def density_and_contour(data,
             plt.plot(g[:, 0], g[:, 1], color='k', linewidth=1.25)
     # Add title
     if 'title' not in density_params:
-        #if gated_data is not None:
-        #    ret = gated_data.shape[0] * 100. / data.shape[0]
-        #    title = "{} ({:.1f}% retained)".format(str(data), ret)
-        #else:
         title = str(data)
         plt.title(title)
-
-    '''
-    # Colors
-    n_colors = n_plots - 1
-    colors = [cmap_default(i) for i in np.linspace(0, 1, n_colors)]
-    # Histogram
-    for i, hist_channel in enumerate(hist_channels):
-        # Define subplot
-        plt.subplot(n_plots, 1, plot_density + i + 1)
-        # Default colors
-        hist_params_i = hist_params[i].copy()
-        if 'facecolor' not in hist_params_i:
-            hist_params_i['facecolor'] = colors[i]
-        # Plots
-        if gated_data is not None:
-            hist1d(data,
-                   channel=hist_channel,
-                   alpha=0.5,
-                   **hist_params_i)
-            hist1d(gated_data,
-                   channel=hist_channel,
-                   alpha=1.0,
-                   **hist_params_i)
-            plt.legend(['Ungated', 'Gated'], loc='best', fontsize='medium')
-        else:
-            hist1d(data, channel=hist_channel, **hist_params_i)
-    '''
 
     # Save if necessary
     if savefig is not None:

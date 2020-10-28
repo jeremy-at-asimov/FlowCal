@@ -544,7 +544,6 @@ def contour2d(data,
               gate_contour=None,
               xscale='logicle',
               yscale='logicle',
-              #sigma=10.0,
               full_output=False
               ):
     """
@@ -618,22 +617,31 @@ def contour2d(data,
             'Density2dGateOutput',
             ['gated_data', 'mask', 'contour'])
 
-    # Transform the data?
-
-    x_logicle = FlowCal.plot._LogicleTransform(data=data_ch[:,0], channel=channels[0], W=0.5)
-    y_logicle = FlowCal.plot._LogicleTransform(data=data_ch[:,1], channel=channels[1], W=0.5)
-
-    x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=x_logicle.M)
-    y_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=y_logicle, smin=0, smax=y_logicle.M)
-
-    data_ch[:,0] = x_inverse.transform_non_affine(data_ch[:,0])
-    data_ch[:,1] = y_inverse.transform_non_affine(data_ch[:,1])
-
-    # Transform the contour?
-
+    # Get the contour and reshape
     squeezed_contour = np.squeeze(gate_contour)
-    squeezed_contour[:,0] = x_inverse.transform_non_affine(squeezed_contour[:,0])
-    squeezed_contour[:,1] = y_inverse.transform_non_affine(squeezed_contour[:,1])
+
+    # Transform the data and contour if necessary
+    if xscale == 'logicle':
+        x_logicle = FlowCal.plot._LogicleTransform(data=data_ch[:,0], channel=channels[0])
+        x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=x_logicle.M)
+        data_ch[:,0] = x_inverse.transform_non_affine(data_ch[:,0])
+        squeezed_contour[:, 0] = x_inverse.transform_non_affine(squeezed_contour[:, 0])
+    elif xscale == 'log':
+        data_ch[:, 0] = np.log10(data_ch[:,0])
+        squeezed_contour[:, 0] = np.log10(squeezed_contour[:, 0])
+    else:
+        pass
+
+    if yscale == 'logicle':
+        y_logicle = FlowCal.plot._LogicleTransform(data=data_ch[:,1], channel=channels[1])
+        y_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=y_logicle, smin=0, smax=y_logicle.M)
+        data_ch[:,1] = y_inverse.transform_non_affine(data_ch[:,1])
+        squeezed_contour[:, 1] = y_inverse.transform_non_affine(squeezed_contour[:, 1])
+    elif yscale == 'log':
+        data_ch[:, 1] = np.log10(data_ch[:,1])
+        squeezed_contour[:, 1] = np.log10(squeezed_contour[:, 1])
+    else:
+        pass
 
     # Generate mask by checking if within contour
     path = mpltPath.Path(squeezed_contour)
