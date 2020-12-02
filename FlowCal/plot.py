@@ -2049,6 +2049,13 @@ def line2d(df,
         xdata = df[xcolumn].values
         ydata = df[ycolumn].values
 
+        # Remove NaNs and sort by x axis prior to plotting
+        xdata = np.array(xdata)
+        ydata = np.array(ydata)
+        xdata = xdata[np.logical_not(np.isnan(xdata))]
+        ydata = ydata[np.logical_not(np.isnan(ydata))]
+        xdata, ydata = zip(*[(x, y) for x, y in sorted(zip(xdata, ydata))])
+
         plt.plot(xdata,
                  ydata,
                  # s=5,
