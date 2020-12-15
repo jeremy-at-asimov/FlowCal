@@ -100,7 +100,7 @@ def lin_fit_logicle_scale(x, m, b):
     return x_inverse.transform_non_affine(m * x_logicle.transform_non_affine(x) + b)
 
 
-def model_fit(df,
+def linear_model_fit(df,
               xaxis='',
               yaxis='',
               transform='log'):
