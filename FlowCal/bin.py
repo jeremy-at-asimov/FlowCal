@@ -98,13 +98,24 @@ def linear_model(x, m, b, transform='lin'):
         return m * x + b
 
 
+def fit_linear(x, m, b):
+    return m * x + b
 
-def linear_model_fit(df,
+
+def fit_log(x, m, b):
+    return np.log(m * np.exp(x) + b)
+
+
+def fit_logicle(x, m, b):
+    x_logicle = FlowCal.plot._LogicleTransform(data=x, channel=0)
+    x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=x_logicle.M)
+
+    return x_inverse.transform_non_affine(m * x_logicle.transform_non_affine(x) + b)
+
+def model_fit(df,
               xaxis='',
               yaxis='',
-              model='linear_model',
-              transform='lin',
-              func=None):
+              transform='log'):
     """
     Generate model fits from binned data in pandas dataframe.
     Added by Jeremy Gam, jeremy@asimov.io
@@ -154,35 +165,33 @@ def linear_model_fit(df,
         ydata = ydata[to_keep]
 
         if transform == 'logicle':
+
             x_logicle = FlowCal.plot._LogicleTransform(data=xdata, channel=0)
             x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=7)  # x_logicle.M)
 
-            xdata_transformed = x_inverse.transform_non_affine(xdata)
-            ydata_transformed = x_inverse.transform_non_affine(ydata)
+            xdata_logicle = x_inverse.transform_non_affine(xdata)
+            ydata_logicle = x_inverse.transform_non_affine(ydata)
+
+            popt, pcov = curve_fit(fit_logicle, xdata_logicle, ydata_logicle)
 
         elif transform == 'log':
+
             xdata_log = np.log(xdata)
             ydata_log = np.log(ydata)
 
             to_keep = ~np.isnan(xdata_log) & ~np.isnan(ydata_log)  # remove zeros prior to log transforms
 
-            xdata_transformed = xdata_log[to_keep]
-            ydata_transformed = ydata_log[to_keep]
+            xdata_log = xdata_log[to_keep]
+            ydata_log = ydata_log[to_keep]
+
+            popt, pcov = curve_fit(fit_log, xdata_log, ydata_log)
+
+        elif transform == 'linear':
+
+            popt, pcov = curve_fit(fit_linear, xdata, ydata)
 
         else:
-            xdata_transformed = xdata
-            ydata_transformed = ydata
 
-
-
-        if model == 'linear_model':
-
-            popt, pcov = curve_fit(linear_model, xdata_transformed, ydata_transformed)
-
-        elif model == 'custom':
-            popt, pcov = curve_fit(func, xdata_transformed, ydata_transformed)
-
-        else:
             popt = [1, 1]
 
         fits.append(popt[0])
