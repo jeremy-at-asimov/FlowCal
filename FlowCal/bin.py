@@ -99,7 +99,7 @@ def linear_model(x, m, b, transform='lin'):
 
 
 
-def model_fit(df,
+def linear_model_fit(df,
               xaxis='',
               yaxis='',
               model='linear_model',
