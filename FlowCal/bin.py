@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
+from scipy.optimize import leastsq
 import FlowCal.gate
 
 default_stats = ['mean', 'gmean', 'mode', 'median', 'std', 'cv', 'gstd', 'gcv', 'iqr', 'rcv']
@@ -97,6 +98,9 @@ def linear_model(x, m, b, transform='lin'):
     else:
         return m * x + b
 
+## eventually the goal will be to condense the fit_linear, fit_log, and fit_logicle functions into just the linear_model function
+## probably we will need to change to leastsq rather than curvefit
+## see https://stackoverflow.com/questions/49813481/how-to-pass-parameter-to-fit-function-when-using-scipy-optimize-curve-fit/49817821
 
 def fit_linear(x, m, b):
     return m * x + b
@@ -194,6 +198,6 @@ def model_fit(df,
 
             popt = [1, 1]
 
-        fits.append(popt[0])
+        fits.append(popt)
 
     return fits
