@@ -88,7 +88,7 @@ def bin1d(bin_by, list_FCSData, bin_edges=default_bin_edges, stats=default_stats
     return (df)
 
 
-class linear_model_wrapper:
+class model_wrapper:
 
     def __init__(self):
         pass
@@ -122,7 +122,8 @@ def fit_logicle(x, m, b):
 def model_fit(df,
               xaxis='',
               yaxis='',
-              transform='log'):
+              transform='log',
+              model='linear'):
     """
     Generate model fits from binned data in pandas dataframe.
     Added by Jeremy Gam, jeremy@asimov.io
@@ -170,9 +171,6 @@ def model_fit(df,
         xdata = xdata[to_keep]
         ydata = ydata[to_keep]
 
-        model_class = linear_model_wrapper()
-        model_class.transform = transform
-
         if transform == 'logicle':
 
             x_logicle = FlowCal.plot._LogicleTransform(data=xdata, channel=0)
@@ -196,9 +194,14 @@ def model_fit(df,
             xdata_transform = xdata
             ydata_transform = ydata
 
-        popt, pcov = curve_fit(model_class.linear_model, xdata_transform, ydata_transform)
 
+        if model == 'hill':
+            pass #for now
 
+        else:
+            model_class = model_wrapper()
+            model_class.transform = transform
+            popt, pcov = curve_fit(model_class.linear_model, xdata_transform, ydata_transform)
 
         fits.append(popt)
 
