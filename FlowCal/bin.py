@@ -88,20 +88,22 @@ def bin1d(bin_by, list_FCSData, bin_edges=default_bin_edges, stats=default_stats
     return (df)
 
 
-def linear_model(x, m, b, transform='lin'):
-    if transform == 'log':
-        return np.log(m * np.exp(x) + b)
-    elif transform == 'logicle':
-        x_logicle = FlowCal.plot._LogicleTransform(data=x, channel=0)
-        x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=x_logicle.M)
-        return x_inverse.transform_non_affine(m * x_logicle.transform_non_affine(x) + b)
-    else:
-        return m * x + b
+class linear_model_wrapper:
 
-## eventually the goal will be to condense the fit_linear, fit_log, and fit_logicle functions into just the linear_model function
-## probably we will need to change to leastsq rather than curvefit
-## see https://stackoverflow.com/questions/49813481/how-to-pass-parameter-to-fit-function-when-using-scipy-optimize-curve-fit/49817821
+    def __init__(self):
+        pass
 
+    def linear_model(self, x, m, b):
+        if self.transform == 'log':
+            return np.log(m * np.exp(x) + b)
+        elif self.transform == 'logicle':
+            x_logicle = FlowCal.plot._LogicleTransform(data=x, channel=0)
+            x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=x_logicle.M)
+            return x_inverse.transform_non_affine(m * x_logicle.transform_non_affine(x) + b)
+        else:
+            return m * x + b
+
+'''
 def fit_linear(x, m, b):
     return m * x + b
 
@@ -115,6 +117,7 @@ def fit_logicle(x, m, b):
     x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=x_logicle.M)
 
     return x_inverse.transform_non_affine(m * x_logicle.transform_non_affine(x) + b)
+'''
 
 def model_fit(df,
               xaxis='',
@@ -140,7 +143,6 @@ def model_fit(df,
     Fits with logicle transform seem sensitive to noise so bins
     with low numbers of events should be excluded in steps prior
     to fitting
-
 
     """
     # Check appropriate inputs
@@ -168,15 +170,16 @@ def model_fit(df,
         xdata = xdata[to_keep]
         ydata = ydata[to_keep]
 
+        model_class = linear_model_wrapper()
+        model_class.transform = transform
+
         if transform == 'logicle':
 
             x_logicle = FlowCal.plot._LogicleTransform(data=xdata, channel=0)
             x_inverse = FlowCal.plot._InterpolatedInverseTransform(transform=x_logicle, smin=0, smax=7)  # x_logicle.M)
 
-            xdata_logicle = x_inverse.transform_non_affine(xdata)
-            ydata_logicle = x_inverse.transform_non_affine(ydata)
-
-            popt, pcov = curve_fit(fit_logicle, xdata_logicle, ydata_logicle)
+            xdata_transform = x_inverse.transform_non_affine(xdata)
+            ydata_transform = x_inverse.transform_non_affine(ydata)
 
         elif transform == 'log':
 
@@ -185,18 +188,17 @@ def model_fit(df,
 
             to_keep = ~np.isnan(xdata_log) & ~np.isnan(ydata_log)  # remove zeros prior to log transforms
 
-            xdata_log = xdata_log[to_keep]
-            ydata_log = ydata_log[to_keep]
-
-            popt, pcov = curve_fit(fit_log, xdata_log, ydata_log)
-
-        elif transform == 'linear':
-
-            popt, pcov = curve_fit(fit_linear, xdata, ydata)
+            xdata_transform = xdata_log[to_keep]
+            ydata_transform = ydata_log[to_keep]
 
         else:
 
-            popt = [1, 1]
+            xdata_transform = xdata
+            ydata_transform = ydata
+
+        popt, pcov = curve_fit(model_class.linear_model, xdata_transform, ydata_transform)
+
+
 
         fits.append(popt)
 
