@@ -123,7 +123,7 @@ def model_fit(df,
               xaxis='',
               yaxis='',
               transform='log',
-              model='linear'):
+              model='default'):
     """
     Generate model fits from binned data in pandas dataframe.
     Added by Jeremy Gam, jeremy@asimov.io
@@ -198,10 +198,20 @@ def model_fit(df,
         if model == 'hill':
             pass #for now
 
-        else:
+        elif model == 'linear':
             model_class = model_wrapper()
             model_class.transform = transform
             popt, pcov = curve_fit(model_class.linear_model, xdata_transform, ydata_transform)
+
+        elif model == 'default':
+            print('Warning: no model given, using linear model as default')
+            model_class = model_wrapper()
+            model_class.transform = transform
+            popt, pcov = curve_fit(model_class.linear_model, xdata_transform, ydata_transform)
+
+        else:
+            print('Error: given model not implemented yet, no fit will be provided')
+            popt = 0
 
         fits.append(popt)
 
