@@ -12,6 +12,7 @@ It features:
 * A user-fiendly Excel UI to gate, transform, plot, and generate statistics from a list of flow cytometry samples in a simple fashion.
 
 What we've added in the Asimov Fork:
+
 * Saving and applying gating contours
 * Binning by fluorescence
 
