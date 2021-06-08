@@ -1076,6 +1076,7 @@ def density2d(data,
               xlim=None,
               ylim=None,
               title=None,
+              axis_off=False,
               savefig=None,
               **kwargs):
     """
@@ -1134,6 +1135,8 @@ def density2d(data,
         histogram.
     colorbar : bool, optional
         Flag indicating whether to add a colorbar to the plot.
+    axis_off : bool, optional
+        Flag indicating whether to remove the axis from the plot.
     savefig : str, optional
         The name of the file to save the figure to. If None, do not save.
 
@@ -1307,6 +1310,10 @@ def density2d(data,
     if title is not None:
         plt.title(title)
 
+    # axis off
+    if axis_off:
+        plt.axis('off')
+
     # Save if necessary
     if savefig is not None:
         plt.tight_layout()
@@ -1323,6 +1330,7 @@ def scatter2d(data_list,
               ylim=None,
               title=None,
               color=None,
+              axis_off=False,
               savefig=None,
               **kwargs):
     """
@@ -1334,6 +1342,8 @@ def scatter2d(data_list,
         Flow cytometry data to plot.
     channels : list of int, list of str
         Two channels to use for the plot.
+    axis_off : bool, optional
+        Flag indicating whether to remove the axis from the plot.
     savefig : str, optional
         The name of the file to save the figure to. If None, do not save.
 
@@ -1454,6 +1464,10 @@ def scatter2d(data_list,
     # Title
     if title is not None:
         plt.title(title)
+
+    # axis off
+    if axis_off:
+        plt.axis('off')
 
     # Save if necessary
     if savefig is not None:
@@ -1971,6 +1985,7 @@ def line2d(df,
            ylim=None,
            title=None,
            color=None,
+           axis_off=False,
            savefig=None,
            **kwargs):
     """
@@ -1993,6 +2008,8 @@ def line2d(df,
         Limits for the x axis.
     ylim : tuple, optional
         Limits for the y axis.
+    axis_off : bool, optional
+        Flag indicating whether to remove the axis from the plot.
     savefig : str, optional
         The name of the file to save the figure to. If None, do not save.
 
@@ -2093,6 +2110,10 @@ def line2d(df,
     # Title
     if title is not None:
         plt.title(title)
+
+    # axis off
+    if axis_off:
+        plt.axis('off')
 
     # Save if necessary
     if savefig is not None:
