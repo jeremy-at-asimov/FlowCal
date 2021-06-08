@@ -24,7 +24,10 @@ import scipy.ndimage.filters
 import skimage.measure
 import collections
 import matplotlib.path as mpltPath
+import logging
 import FlowCal.plot
+
+log = logging.getLogger()
 
 ###
 # Gate Functions
@@ -533,6 +536,9 @@ def density2d(data,
                                         yc)]).T
                     for contour_ij in contours_ij]
 
+        if len(contours) > 1:
+            log.warning('Warning: more than one contour generated. Adjust gating parameters or extract the contour of interest before proceeding.')
+
         return Density2dGateOutput(
             gated_data=gated_data, mask=mask, contour=contours)
     else:
@@ -597,6 +603,9 @@ def contour2d(data,
     # Check if countour exists
     if gate_contour == None:
         raise ValueError('Provide a contour to gate with')
+    if len(gate_contour) > 1:
+        raise ValueError("List containing more than one gating contours provided rather than a single contour. "
+                         "Extract a single contour before running.")
 
     # Extract channels in which to gate
     if len(channels) != 2:

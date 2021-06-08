@@ -2162,6 +2162,9 @@ def density_and_contour(data,
     density2d(data, channels=channels, **density_params)
     # Plot gate contour
     if gate_contour is not None:
+        if len(gate_contour) > 1:
+            raise ValueError("List containing more than one gating contours provided rather than a single contour. "
+                             "Extract a single contour before running.")
         for g in gate_contour:
             plt.plot(g[:, 0], g[:, 1], color='k', linewidth=1.25)
     # Add title
