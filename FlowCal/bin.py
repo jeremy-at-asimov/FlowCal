@@ -6,6 +6,7 @@ import FlowCal.gate
 
 default_stats = ['mean', 'gmean', 'mode', 'median', 'std', 'cv', 'gstd', 'gcv', 'iqr', 'rcv']
 default_bin_edges = [-100, -50, 0, 50, 1e2, 3.16e2, 1e3, 3.16e3, 1e4, 3.16e4, 1e5, 3.16e5, 1e6, 3.16e6, 1e7]
+default_diag_edges = [-100, 1e2, 3.16e2, 1e3, 3.16e3, 1e4, 3.16e4, 1e5, 3.16e5, 1e6, 3.16e6, 1e7]
 
 def bin1d(bin_by, list_FCSData, bin_edges=default_bin_edges, stats=default_stats, channels=[], events_threshold=0):
     """
@@ -87,6 +88,117 @@ def bin1d(bin_by, list_FCSData, bin_edges=default_bin_edges, stats=default_stats
 
     return (df)
 
+def bin_diag(list_FCSData, bin_edges=default_diag_edges, stats=default_stats, channels=[0,1], events_threshold=0, xscale='logicle', yscale='logicle'):
+    """
+    Bins a list of FCSData objects and generates a dataframe with
+    statistics calculated within each bin. Bins are diagonally
+    slanted trapezoids rather than rectangular, which may better
+    account for different samples with high signal different axes.
+
+    Parameters
+    ----------
+    list_FCSData : a list of FCSData objects
+        NxD flow cytometry data where N is the number of events and D is
+        the number of parameters (aka channels).
+    bin_diag_edges : list of int
+        Values (often fluorescence) within channel used to define the
+        trapezoidal bins.
+    stats : list of str
+        names for statistics to be calculated. Values include ['mean',
+        'gmean', 'mode', 'median', 'std', 'cv', 'gstd', 'gcv', 'iqr',
+        'rcv'].
+    channels : list of str or int
+        list of channels to make statistics for
+    events_threshold : int, optional
+        events needed for stats to be calculated for a given bin
+    xscale : str, optional
+        Scale for x-axis when determining if datapoint are within a bin
+    yscale : str, optional
+        Scale for y-axis when determining if datapoint are within a bin
+
+    Returns
+    -------
+    pandas dataframe
+        df with column names including the sample name, statistic, and
+        channel.
+
+    Notes
+    -----
+
+
+    """
+    first_FCSData = list_FCSData[0]
+    empty_np = np.empty((1, first_FCSData.shape[1]))
+    empty_np[:] = np.NaN
+    first_FCSData = list_FCSData[0]
+    channel_names = list(first_FCSData.channels)
+    df = pd.DataFrame()
+
+    if not channels:
+        channels = channel_names
+
+    # iterate over all FCSData objects
+    for temp_FCSData in list_FCSData:
+
+        sample_df = pd.DataFrame()
+        contours = []
+
+        min_edge = min(bin_edges)
+        max_edge = max(bin_edges)
+
+        # make trapezoidal gating contours for low expression region
+        for i, (low_edge, high_edge) in enumerate(zip(bin_edges[:-1], bin_edges[1:])):
+            contour = [(high_edge,min_edge),
+                       (min_edge,high_edge),
+                       (min_edge,low_edge),
+                       (low_edge,min_edge)]
+            if contour[-1] != contour[0]: # close the contour if necessary
+                contour.append(contour[0])
+            contour = np.asarray(contour)
+            contours.append(contour)
+
+        # make trapezoidal gating contours for high expression region
+        for i, (high_edge, low_edge) in enumerate(zip(reversed(bin_edges[:-1]), reversed(bin_edges[1:]))):
+            contour = [(max_edge, high_edge),
+                       (high_edge, max_edge),
+                       (max_edge, low_edge),
+                       (low_edge, max_edge)]
+            if contour[-1] != contour[0]:  # close the contour if necessary
+                contour.append(contour[0])
+            contour = np.asarray(contour)
+            contours.append(contour)
+
+        # loop over trapezoidal bins and calculate statistics
+        for i, contour in enumerate(contours):
+            contour = [contour]
+            within_bin = FlowCal.gate.contour2d(temp_FCSData, channels=channels, gate_contour=contour,
+                                               xscale=xscale, yscale=yscale, full_output=False)
+
+            if within_bin.shape[0] > 0:
+                row_df = pd.DataFrame()
+
+                for stat in stats:
+                    function = getattr(FlowCal.stats, stat)
+                    temp_np_array = np.copy(empty_np)
+                    # print(within_bin.shape)
+                    temp_np_array[:] = function(within_bin)
+
+                    temp_df = pd.DataFrame(data=temp_np_array, index=['bin_'+str(i)], columns=channel_names)
+                    temp_df = temp_df[channels]
+                    filtered_channel_names = list(temp_df.columns)
+                    temp_df.columns = [str(temp_FCSData) + '_' + stat + '_' + channel_name for channel_name in
+                                       filtered_channel_names]
+
+                    if len(within_bin) < events_threshold:
+                        temp_df.loc[:] = np.nan
+
+                    row_df = pd.concat([row_df, temp_df], axis=1, sort=False, join='outer')
+
+                sample_df = pd.concat([sample_df, row_df], axis=0, sort=False, join='outer')
+
+        df = pd.concat([df, sample_df], axis=1, sort=False, join='outer')
+
+    return (df)
 
 class model_wrapper:
 

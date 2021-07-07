@@ -147,11 +147,13 @@ def high_low(data, channels=None, high=None, low=None, full_output=False):
     mask = np.all((data_ch < high) & (data_ch > low), axis = 1)
     gated_data = data[mask]
 
+    pct_in_gate = mask.tolist().count(True)/len(mask)
+
     if full_output:
         HighLowGateOutput = collections.namedtuple(
             'HighLowGateOutput',
-            ['gated_data', 'mask'])
-        return HighLowGateOutput(gated_data=gated_data, mask=mask)
+            ['gated_data', 'mask', 'pct_in_gate'])
+        return HighLowGateOutput(gated_data=gated_data, mask=mask, pct_in_gate = pct_in_gate)
     else:
         return gated_data
 
